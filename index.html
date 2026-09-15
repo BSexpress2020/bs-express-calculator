@@ -33,8 +33,19 @@
     #bse-calc-root .bse-sub {
       font-size: 14px;
       color: #6B645C;
-      margin: 0 0 24px;
+      margin: 0 0 16px;
       line-height: 1.6;
+    }
+    #bse-calc-root .bse-min-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--bse-red-dark);
+      background: #FBEAE8;
+      border: 1px solid #F0C6C1;
+      border-radius: 3px;
+      padding: 5px 10px;
+      margin-bottom: 24px;
     }
     #bse-calc-root .bse-row {
       display: grid;
@@ -143,6 +154,7 @@
     <div class="bse-body">
       <h2>คำนวณค่าขนส่งโดยประมาณ</h2>
       <p class="bse-sub">กรอกน้ำหนักและขนาดกล่อง ระบบจะประเมินค่าขนส่งให้ทันที</p>
+      <div class="bse-min-badge">ค่าขนส่งขั้นต่ำ 100 บาท/จุด</div>
 
       <div class="bse-field bse-weight">
         <label for="bse-weight">น้ำหนักสินค้า (กก.) <span style="color:var(--bse-red-dark);">*จำเป็นต้องกรอก</span></label>
@@ -185,10 +197,12 @@
         <span class="bse-result-label">ค่าขนส่งโดยประมาณ</span>
         <span class="bse-price"><span id="bse-price-value">—</span><span> บาท</span></span>
       </div>
+      <div class="bse-floor-note" id="bse-floor-note" style="text-align:right;font-size:12px;color:var(--bse-red-dark);margin-top:2px;"></div>
 
       <p class="bse-note">
         <strong>หมายเหตุ:</strong> ราคานี้เป็นการประเมินเบื้องต้น อ้างอิงราคาน้ำมัน ณ วันที่อัปเดตหน้านี้
         ราคาจริงอาจเปลี่ยนแปลงตามราคาน้ำมัน ณ วันจัดส่งและการตรวจสอบสินค้าจริงหน้างาน
+        ค่าขนส่งขั้นต่ำต่อจุด 100 บาท
       </p>
     </div>
   </div>
@@ -208,6 +222,7 @@
     var fragileEl = root.querySelector('#bse-fragile');
     var highValueEl = root.querySelector('#bse-highvalue');
     var priceEl = root.querySelector('#bse-price-value');
+    var floorNoteEl = root.querySelector('#bse-floor-note');
     var errorEl = root.querySelector('#bse-error');
 
     function fuelMultiplier(price) {
@@ -218,6 +233,9 @@
       return 1.25;
     }
 
+    // ค่าขนส่งขั้นต่ำต่อจุด
+    var MIN_SHIPPING_FEE = 100;
+
     function calculate() {
       var weight = parseFloat(weightEl.value);
       var w = parseFloat(wEl.value);
@@ -227,16 +245,19 @@
       var hasDimensions = [w, l, h].every(function (v) { return !isNaN(v); });
       if (!hasDimensions) {
         priceEl.textContent = '—';
+        floorNoteEl.textContent = '';
         errorEl.textContent = '';
         return;
       }
       if (w <= 0 || l <= 0 || h <= 0) {
         priceEl.textContent = '—';
+        floorNoteEl.textContent = '';
         errorEl.textContent = 'กรุณากรอกขนาดกล่องเป็นตัวเลขที่มากกว่า 0';
         return;
       }
       if (isNaN(weight) || weight <= 0) {
         priceEl.textContent = '—';
+        floorNoteEl.textContent = '';
         errorEl.textContent = 'กรุณาชั่งน้ำหนักสินค้าก่อนคำนวณราคา (จำเป็นสำหรับการคิดราคาที่แม่นยำ)';
         return;
       }
@@ -253,6 +274,13 @@
 
       var price = base * surchargeMultiplier * fuelMultiplier(CURRENT_FUEL_PRICE);
       price = Math.ceil(price / 5) * 5;
+
+      if (price < MIN_SHIPPING_FEE) {
+        price = MIN_SHIPPING_FEE;
+        floorNoteEl.textContent = '(ใช้ราคาขั้นต่ำ 100 บาท)';
+      } else {
+        floorNoteEl.textContent = '';
+      }
 
       priceEl.textContent = price.toLocaleString('th-TH');
     }
